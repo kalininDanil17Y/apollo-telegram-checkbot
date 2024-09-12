@@ -20,6 +20,9 @@ WHITELIST = set(config['WHITELIST'])
 # Файл базы данных
 DATABASE_FILE = 'links.db'
 
+# Словарь для хранения состояния пользователей
+user_state = {}
+
 def create_table():
     conn = sqlite3.connect(DATABASE_FILE)
     c = conn.cursor()
@@ -73,12 +76,44 @@ async def start(update: Update, context: CallbackContext):
     await update.message.reply_text('Привет! Отправьте мне ссылку для проверки или используйте команду /add <ссылка> для добавления.')
 
 async def handle_message(update: Update, context: CallbackContext):
-    url = update.message.text
+    user_id = str(update.message.from_user.id)
+    if user_id in user_state and user_state[user_id] == 'waiting_for_url_add':
+        url = update.message.text
 
-    if link_exists(url):
-        await update.message.reply_text(f'Ссылка найдена: {url}')
+        if update.message.text.lower() in ['отмена', 'cancel', '/отмена', '/cancel']:
+            user_state.pop(user_id, None)
+            await update.message.reply_text('Отменено')
+            return
+
+        if not link_exists(url):
+            add_link_to_db(url)
+            await update.message.reply_text(f'Ссылка добавлена: {url}')
+        else:
+            await update.message.reply_text('Ссылка уже существует.')
+        user_state.pop(user_id, None)
+
+    elif user_id in user_state and user_state[user_id] == 'waiting_for_url_remove':
+
+        url = update.message.text
+
+        if update.message.text.lower() in ['отмена', 'cancel', '/отмена', '/cancel']:
+            user_state.pop(user_id, None)
+            await update.message.reply_text('Отменено')
+            return
+
+        if link_exists(url):
+            remove_link_from_db(url)
+            await update.message.reply_text(f'Ссылка удалена: {url}')
+        else:
+            await update.message.reply_text('Ссылка не найдена.')
+        user_state.pop(user_id, None)
+
     else:
-        await update.message.reply_text('Ссылка не найдена. Используйте команду /add для добавления.')
+        url = update.message.text
+        if link_exists(url):
+            await update.message.reply_text(f'Ссылка найдена: {url}')
+        else:
+            await update.message.reply_text('Ссылка не найдена. Используйте команду /add для добавления.')
 
 async def add_link(update: Update, context: CallbackContext):
     user_id = str(update.message.from_user.id)
@@ -94,7 +129,8 @@ async def add_link(update: Update, context: CallbackContext):
         else:
             await update.message.reply_text('Ссылка уже существует.')
     else:
-        await update.message.reply_text('Пожалуйста, отправьте ссылку после команды /add.')
+        user_state[user_id] = 'waiting_for_url_add'
+        await update.message.reply_text('Пожалуйста, отправьте ссылку, которую хотите добавить.')
 
 async def remove_link(update: Update, context: CallbackContext):
     user_id = str(update.message.from_user.id)
@@ -110,7 +146,8 @@ async def remove_link(update: Update, context: CallbackContext):
         else:
             await update.message.reply_text('Ссылка не найдена.')
     else:
-        await update.message.reply_text('Пожалуйста, отправьте ссылку после команды /remove.')
+        user_state[user_id] = 'waiting_for_url_remove'
+        await update.message.reply_text('Пожалуйста, отправьте ссылку, которую хотите удалить.')
 
 async def send_id(update: Update, context: CallbackContext):
     user_id = update.message.from_user.id
