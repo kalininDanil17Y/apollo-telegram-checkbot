@@ -75,38 +75,37 @@ def link_exists(url):
 async def start(update: Update, context: CallbackContext):
     await update.message.reply_text('Привет! Отправьте мне ссылку для проверки или используйте команду /add <ссылка> для добавления.')
 
+async def cancel(update: Update, context: CallbackContext):
+    user_id = str(update.message.from_user.id)
+    if user_id in user_state:
+        user_state.pop(user_id, None)
+        await update.message.reply_text('Отменено')
+
 async def handle_message(update: Update, context: CallbackContext):
     user_id = str(update.message.from_user.id)
-    if user_id in user_state and user_state[user_id] == 'waiting_for_url_add':
+    if user_id in user_state:
+        state = user_state[user_id]
         url = update.message.text
 
-        if update.message.text.lower() in ['отмена', 'cancel', '/отмена', '/cancel']:
-            user_state.pop(user_id, None)
-            await update.message.reply_text('Отменено')
+        if url.lower() in ['отмена', 'cancel', '/отмена', '/cancel']:
+            await cancel(update, context)
             return
 
-        if not link_exists(url):
-            add_link_to_db(url)
-            await update.message.reply_text(f'Ссылка добавлена: {url}')
-        else:
-            await update.message.reply_text('Ссылка уже существует.')
-        user_state.pop(user_id, None)
-
-    elif user_id in user_state and user_state[user_id] == 'waiting_for_url_remove':
-
-        url = update.message.text
-
-        if update.message.text.lower() in ['отмена', 'cancel', '/отмена', '/cancel']:
+        if state == 'waiting_for_url_add':
+            if not link_exists(url):
+                add_link_to_db(url)
+                await update.message.reply_text(f'Ссылка добавлена: {url}')
+            else:
+                await update.message.reply_text('Ссылка уже существует.')
             user_state.pop(user_id, None)
-            await update.message.reply_text('Отменено')
-            return
 
-        if link_exists(url):
-            remove_link_from_db(url)
-            await update.message.reply_text(f'Ссылка удалена: {url}')
-        else:
-            await update.message.reply_text('Ссылка не найдена.')
-        user_state.pop(user_id, None)
+        elif state == 'waiting_for_url_remove':
+            if link_exists(url):
+                remove_link_from_db(url)
+                await update.message.reply_text(f'Ссылка удалена: {url}')
+            else:
+                await update.message.reply_text('Ссылка не найдена.')
+            user_state.pop(user_id, None)
 
     else:
         url = update.message.text
@@ -130,7 +129,7 @@ async def add_link(update: Update, context: CallbackContext):
             await update.message.reply_text('Ссылка уже существует.')
     else:
         user_state[user_id] = 'waiting_for_url_add'
-        await update.message.reply_text('Пожалуйста, отправьте ссылку, которую хотите добавить.')
+        await update.message.reply_text('Пожалуйста, отправьте ссылку, которую хотите добавить. Вы можете отменить операцию, отправив "отмена" или "/cancel".')
 
 async def remove_link(update: Update, context: CallbackContext):
     user_id = str(update.message.from_user.id)
@@ -147,7 +146,7 @@ async def remove_link(update: Update, context: CallbackContext):
             await update.message.reply_text('Ссылка не найдена.')
     else:
         user_state[user_id] = 'waiting_for_url_remove'
-        await update.message.reply_text('Пожалуйста, отправьте ссылку, которую хотите удалить.')
+        await update.message.reply_text('Пожалуйста, отправьте ссылку, которую хотите удалить. Вы можете отменить операцию, отправив "отмена" или "/cancel".')
 
 async def send_id(update: Update, context: CallbackContext):
     user_id = update.message.from_user.id
@@ -162,6 +161,7 @@ def main():
     application.add_handler(CommandHandler('add', add_link))
     application.add_handler(CommandHandler('remove', remove_link))
     application.add_handler(CommandHandler('myid', send_id))
+    application.add_handler(CommandHandler('cancel', cancel))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     application.run_polling()
