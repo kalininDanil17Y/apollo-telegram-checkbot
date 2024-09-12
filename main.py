@@ -73,13 +73,25 @@ def link_exists(url):
     return exists
 
 async def start(update: Update, context: CallbackContext):
-    await update.message.reply_text('Привет! Отправьте мне ссылку для проверки или используйте команду /add <ссылка> для добавления.')
+    await update.message.reply_text('Привет! Отправьте мне ссылку для проверки или используйте команду /help что-бы получить дополнительную информацию.')
+
+
+async def helpCommand(update: Update, context: CallbackContext):
+    message = (f"Бот сделан для команды Аполло, вот список команд:\n"
+               f"/add [сслыка] - Добавить ссылку в базу\n"
+               f"/remove [ссылка] - Удалить ссылку из базы\n"
+               f"/cancel - для отмены действий\n"
+               f"/myid - возвращает ваш userid\n"
+               f"Так-же если отправить ссылку будет выполнена проверка, есть такая ссылка в базе или нет")
+    await update.message.reply_text(message, parse_mode='HTML')
 
 async def cancel(update: Update, context: CallbackContext):
     user_id = str(update.message.from_user.id)
     if user_id in user_state:
         user_state.pop(user_id, None)
         await update.message.reply_text('Отменено')
+    else:
+        await update.message.reply_text('Нечего отменять')
 
 async def handle_message(update: Update, context: CallbackContext):
     user_id = str(update.message.from_user.id)
@@ -162,6 +174,7 @@ def main():
     application.add_handler(CommandHandler('remove', remove_link))
     application.add_handler(CommandHandler('myid', send_id))
     application.add_handler(CommandHandler('cancel', cancel))
+    application.add_handler(CommandHandler('help', helpCommand))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     application.run_polling()
