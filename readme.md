@@ -18,7 +18,7 @@ CheckLink - это Telegram бот, который позволяет польз
 
    ```bash
    git clone https://github.com/kalininDanil17Y/apollo-telegram-checkbot.git
-   cd checklink-bot
+   cd apollo-telegram-checkbot
    ```
    
 2. Создайте виртуальное окружение и активируйте его:
