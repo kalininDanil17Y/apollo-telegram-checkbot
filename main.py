@@ -72,11 +72,12 @@ def link_exists(url):
     conn.close()
     return exists
 
-async def start(update: Update, context: CallbackContext):
+
+async def start(update: Update, _context: CallbackContext):
     await update.message.reply_text('Привет! Отправьте мне ссылку для проверки или используйте команду /help что-бы получить дополнительную информацию.')
 
 
-async def helpCommand(update: Update, context: CallbackContext):
+async def helpCommand(update: Update, _context: CallbackContext):
     message = (f"Бот сделан для команды Аполло, вот список команд:\n"
                f"/add [ссылка] - Добавить ссылку в базу\n"
                f"/remove [ссылка] - Удалить ссылку из базы\n"
@@ -85,7 +86,7 @@ async def helpCommand(update: Update, context: CallbackContext):
                f"Так-же если отправить ссылку будет выполнена проверка, есть такая ссылка в базе или нет")
     await update.message.reply_text(message, parse_mode='HTML')
 
-async def cancel(update: Update, context: CallbackContext):
+async def cancel(update: Update, _context: CallbackContext):
     user_id = str(update.message.from_user.id)
     if user_id in user_state:
         user_state.pop(user_id, None)
@@ -160,7 +161,7 @@ async def remove_link(update: Update, context: CallbackContext):
         user_state[user_id] = 'waiting_for_url_remove'
         await update.message.reply_text('Пожалуйста, отправьте ссылку, которую хотите удалить. Вы можете отменить операцию, отправив "отмена" или "/cancel".')
 
-async def send_id(update: Update, context: CallbackContext):
+async def send_id(update: Update, _context: CallbackContext):
     user_id = update.message.from_user.id
     message = f"Ваш ID: <code>{user_id}</code>"
     await update.message.reply_text(message, parse_mode='HTML')
