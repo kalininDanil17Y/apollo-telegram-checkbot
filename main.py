@@ -78,7 +78,7 @@ async def start(update: Update, context: CallbackContext):
 
 async def helpCommand(update: Update, context: CallbackContext):
     message = (f"Бот сделан для команды Аполло, вот список команд:\n"
-               f"/add [сслыка] - Добавить ссылку в базу\n"
+               f"/add [ссылка] - Добавить ссылку в базу\n"
                f"/remove [ссылка] - Удалить ссылку из базы\n"
                f"/cancel - для отмены действий\n"
                f"/myid - возвращает ваш userid\n"
